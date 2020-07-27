@@ -1,0 +1,7 @@
+*.p1
+*.d
+*.i
+*.o
+*.mk
+debug
+production

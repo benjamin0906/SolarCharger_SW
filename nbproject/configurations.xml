@@ -23,6 +23,11 @@
       <itemPath>FVR.c</itemPath>
       <itemPath>FVR_Types.h</itemPath>
       <itemPath>FVR.h</itemPath>
+      <itemPath>Interrupt.c</itemPath>
+      <itemPath>Interrupt_Types.h</itemPath>
+      <itemPath>Timer0_Types.h</itemPath>
+      <itemPath>Timer0.h</itemPath>
+      <itemPath>Interrupt.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -160,6 +165,7 @@
                   value="Press to browse for a specific firmware version"/>
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

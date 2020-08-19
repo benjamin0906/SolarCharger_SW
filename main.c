@@ -8,6 +8,14 @@
 #include "types.h"
 #include "Ports.h"
 #include "FVR.h"
+#include "Timer0.h"
+#include "Interrupt.h"
+
+typedef enum
+{
+	SetLeds,
+	ClearLeds,
+} dtIdleSm;
 
 // CONFIG1
 #pragma config FEXTOSC = OFF    // External Oscillator mode selection bits (Oscillator not enabled)
@@ -47,18 +55,53 @@
 // CONFIG5
 #pragma config CP = OFF         // UserNVM Program memory code protection bit (UserNVM code protection disabled)
 
-#define EIGHTY_PERC_VALUE   3692
-#define SIXTY_PERC_VALUE    3554
-#define FOURTY_PERC_VALUE   3415
-#define TWENTY_PERC_VALUE   3323
+#define EIGHTYTREE_PERC_VALUE   3699
+#define SIXTYSIX_PERC_VALUE    3538
+#define FIFTY_PERC_VALUE   3423
+#define THIRTYTREE_PERC_VALUE   3245
+#define SIXTEEN_PERC_VALUE   3283
 
 extern void ADC_Init(void);
 extern void ADC_StartConversion(void);
 extern uint8 ADC_ConversionReady(void);
 extern uint16 ADC_GetValue(void);
-extern void Timer0_Init(void);
-extern uint8 Timer0_Set(uint8 value);
 
+dtIdleSm IdleState;
+uint8 TimerValue = 100;
+void IdleStateMachine(void)
+{
+	switch(IdleState)
+	{
+		case SetLeds:
+		{
+			uint16 value = ADC_GetValue();
+			ADC_StartConversion();
+            TimerValue = 100;
+			if(value >= EIGHTYTREE_PERC_VALUE) GpioOut(PINC4,1);
+			else GpioOut(PINC4,0);
+			if(value >= SIXTYSIX_PERC_VALUE) GpioOut(PINC3,1);
+			else GpioOut(PINC3,0);
+			if(value >= FIFTY_PERC_VALUE) GpioOut(PINC2,1);
+			else GpioOut(PINC2,0);
+			if(value >= THIRTYTREE_PERC_VALUE) GpioOut(PINC1,1);
+			else GpioOut(PINC1,0);
+			GpioOut(PINC0,1);
+			if(value < SIXTEEN_PERC_VALUE) TimerValue = 25;
+			IdleState = ClearLeds;
+            Timer0_Set(2);
+		}
+		break;
+		case ClearLeds:
+		GpioOut(PINC0,0);
+		GpioOut(PINC1,0);
+		GpioOut(PINC2,0);
+		GpioOut(PINC3,0);
+		GpioOut(PINC4,0);
+        IdleState = SetLeds;
+        Timer0_Set(TimerValue);
+		break;
+	}
+}
 
 void main(void) 
 {
@@ -79,23 +122,15 @@ void main(void)
     GpioOut(PINC4,0);
     FVR_Init();
     ADC_Init();
-    Timer0_Init();
-    *((uint8*)(0x12)) = 0xff;
+    ADC_StartConversion();
+    {
+        dtTimer0Config config = {.ClockSrc = Src_LFINTOSC, .Postscaler = PostScale_10, .Prescaler = Prescaler_64, .TimerBit = EightBitTimer};
+        Timer0_Init(config, 10);
+    }
+    Interrupt_Init(&IdleStateMachine);
     while(1)
     {
-        ADC_StartConversion();
-        while(ADC_ConversionReady() == 0);
-        value = ADC_GetValue();
-        if(value >= EIGHTY_PERC_VALUE) GpioOut(PINC4,1);
-        else GpioOut(PINC4,0);
-        if(value >= SIXTY_PERC_VALUE) GpioOut(PINC3,1);
-        else GpioOut(PINC3,0);
-        if(value >= FOURTY_PERC_VALUE) GpioOut(PINC2,1);
-        else GpioOut(PINC2,0);
-        if(value >= TWENTY_PERC_VALUE) GpioOut(PINC1,1);
-        else GpioOut(PINC1,0);
-        GpioOut(PINC0,1);
-        
+        asm("SLEEP");
     }
     return;
 }
